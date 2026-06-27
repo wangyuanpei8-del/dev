@@ -5,7 +5,7 @@
     "dev": "pnpm -r --parallel run dev",
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
-    "build": "npm ci --prefix apps/web && npm run build --prefix apps/web",
+    "build": "npm ci --prefix apps/web && node scripts/clean-web-dist.mjs && npm run build --prefix apps/web",
     "build:all": "pnpm -r run build",
     "deploy": "node scripts/deploy.mjs",
     "test": "npm run test:all --prefix apps/api",

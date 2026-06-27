@@ -1,4 +1,9 @@
 import { execSync } from 'node:child_process';
+import { existsSync, rmSync } from 'node:fs';
 
-// Workers Builds injects CLOUDFLARE_API_TOKEN automatically — do not strip it.
-execSync('npx wrangler deploy', { stdio: 'inherit', env: process.env });
+// Stale build cache may keep dist/_redirects; it conflicts with wrangler SPA handling.
+const distDir = 'apps/web/dist';
+const redirects = `${distDir}/_redirects`;
+if (existsSync(redirects)) rmSync(redirects);
+
+execSync('npx wrangler deploy --skip-caching', { stdio: 'inherit', env: process.env });
