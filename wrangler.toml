@@ -1,5 +1,6 @@
 name = "dev20260627"
 compatibility_date = "2026-06-27"
+account_id = "9e0bf9a9e3cab1877895810b958b6650"
 
 [assets]
 directory = "apps/web/dist"

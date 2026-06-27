@@ -97,21 +97,31 @@ npm run docker:full
 - `main` 推送 → Nginx/CDN 部署 `apps/web`（`dist/` 静态资源）
 - `main` 推送 → Railway/Render 部署 `apps/api` + 运行 `prisma migrate deploy`
 
-## 9.6.1 Cloudflare Pages（Web 前端）
+## 9.6.1 Cloudflare Workers Builds（Web 前端）
 
-根目录 `npm run build` **仅**安装并构建 `apps/web`（不构建 NestJS API）；本地全量构建用 `npm run build:all`。
+根目录 `npm run build` **仅**安装并构建 `apps/web`；`npm run deploy` 执行 `wrangler deploy` 发布静态资源。
 
-| Cloudflare 设置 | 值 |
-|-----------------|-----|
+| Cloudflare Build 设置 | 值 |
+|----------------------|-----|
 | Build command | `npm run build` |
-| Build output directory | `apps/web/dist` |
-| **Deploy command** | `npm run deploy`（`wrangler deploy`；`wrangler.toml` 中 `name` 须与 Cloudflare Worker 名一致，如 `dev20260627`） |
-| **Non-production branch deploy command** | `npm run deploy` |
-| 环境变量 `VITE_API_BASE_URL` | 已部署 API 的完整 URL，如 `https://api.example.com/api/v1` |
-| 环境变量 `NODE_VERSION` | `20`（可选） |
+| Deploy command | `npm run deploy` |
+| Path | `/` |
+| **API token** | **必配**（见下方说明；不是 Runtime 的 Variables） |
+| 构建环境变量 `VITE_API_BASE_URL` | 已部署 API 的完整 URL |
+| `wrangler.toml` → `name` | 须与 Worker 名一致（如 `dev20260627`） |
 
-> Pages 会在构建成功后**自动发布** `apps/web/dist`，无需额外 deploy 命令。  
-> API（NestJS + PostgreSQL）需单独部署至 Railway / Render 等；Cloudflare Pages 仅托管 Vue 静态站点。
+### API Token 配置（部署失败时必做）
+
+路径：**Worker 项目 → Settings → Builds**（不是 Runtime 的 Variables and secrets）
+
+1. 找到 **API token** 区块
+2. 选择 **Use automatically generated token**（推荐），或 **Create custom token**，权限需包含：
+   - Account → **Workers Scripts → Edit**
+   - Account → **Workers Builds → Edit**（若有）
+3. 保存后重新部署 **main 最新 commit**
+
+> Runtime 页的 Variables and secrets 为空是正常的；Token 在 **Builds** 页单独配置。  
+> API（NestJS + PostgreSQL）需单独部署；Cloudflare 仅托管 Vue 静态站点。
 
 ## 9.7 部署步骤（首次本番）
 
