@@ -105,7 +105,7 @@ npm run docker:full
 |-----------------|-----|
 | Build command | `npm run build` |
 | Build output directory | `apps/web/dist` |
-| **Deploy command** | `npm run deploy`（即 `wrangler deploy`，由 `wrangler.toml` 发布 `apps/web/dist` 静态资源） |
+| **Deploy command** | `npm run deploy`（`wrangler deploy`；`wrangler.toml` 中 `name` 须与 Cloudflare Worker 名一致，如 `dev20260627`） |
 | **Non-production branch deploy command** | `npm run deploy` |
 | 环境变量 `VITE_API_BASE_URL` | 已部署 API 的完整 URL，如 `https://api.example.com/api/v1` |
 | 环境变量 `NODE_VERSION` | `20`（可选） |
