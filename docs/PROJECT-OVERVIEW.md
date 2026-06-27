@@ -2,7 +2,7 @@
 
 > **用途**：项目全貌说明、答辩 / PPT 演讲素材、新人 onboarding、对外演示简介  
 > **维护要求**：任何功能新增、架构变更、技术栈升级、里程碑完成时，**必须同步更新本文件**（见 `.cursor/rules/project-overview-sync.mdc`）  
-> **最后更新**：2026-06-20  
+> **最后更新**：2026-06-27  
 > **文档版本**：1.1.0  
 > **实现完成度**：Epic 1–9 业务 ✅；自动化测试 ✅（单元 21 + API 集成 6 + 浏览器 E2E 3）
 
@@ -534,6 +534,7 @@ CI（`.github/workflows/ci.yml`）在每次 push 时自动跑单元 + API 集成
 | 1.4.1 | 2026-06-20 | 导航/UI：首页显示名「ダッシュボード」→「ホーム」 |
 | 1.5.0 | 2026-06-20 | 安全/UX 全面加固：后端 RBAC、404 页、移动端侧边栏、ListLoadAlert/DetailNotFound 全列表与详情页、审计可读 diff 等 |
 | 1.4.0 | 2026-06-20 | UX 改造恢复：ActionHubCard/StatusBadge/面包屑、入退寮 hub、双路径向导、社員 360°、履歴筛选、浅色分组侧边栏 |
+| 1.6.0 | 2026-06-27 | 部署：Cloudflare Pages 专用构建（`scripts/build.mjs` + `wrangler.toml`，仅构建 web） |
 
 ---
 

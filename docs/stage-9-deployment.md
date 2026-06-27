@@ -97,6 +97,19 @@ npm run docker:full
 - `main` 推送 → Nginx/CDN 部署 `apps/web`（`dist/` 静态资源）
 - `main` 推送 → Railway/Render 部署 `apps/api` + 运行 `prisma migrate deploy`
 
+## 9.6.1 Cloudflare Pages（Web 前端）
+
+仓库根目录 `wrangler.toml` 指定输出目录 `apps/web/dist`。构建时 Cloudflare 设置 `CF_PAGES=1`，根目录 `npm run build` 会走 `scripts/build.mjs`，**仅**安装并构建 `apps/web`（不构建 NestJS API）。
+
+| Cloudflare 设置 | 值 |
+|-----------------|-----|
+| Build command | `npm run build`（默认即可） |
+| Build output directory | `apps/web/dist` |
+| 环境变量 `VITE_API_BASE_URL` | 已部署 API 的完整 URL，如 `https://api.example.com/api/v1` |
+| 环境变量 `NODE_VERSION` | `20`（可选） |
+
+> API（NestJS + PostgreSQL）需单独部署至 Railway / Render 等；Cloudflare Pages 仅托管 Vue 静态站点。
+
 ## 9.7 部署步骤（首次本番）
 
 1. 创建 PostgreSQL，记录 `DATABASE_URL`
