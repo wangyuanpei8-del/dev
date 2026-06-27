@@ -6,4 +6,4 @@ const distDir = 'apps/web/dist';
 const redirects = `${distDir}/_redirects`;
 if (existsSync(redirects)) rmSync(redirects);
 
-execSync('npx wrangler deploy --skip-caching', { stdio: 'inherit', env: process.env });
+execSync('npx wrangler deploy', { stdio: 'inherit', env: process.env });
