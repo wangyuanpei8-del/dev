@@ -99,7 +99,7 @@ npm run docker:full
 
 ## 9.6.1 Cloudflare Pages（Web 前端）
 
-仓库根目录 `wrangler.toml` 指定输出目录 `apps/web/dist`。构建时 Cloudflare 设置 `CF_PAGES=1`，根目录 `npm run build` 会走 `scripts/build.mjs`，**仅**安装并构建 `apps/web`（不构建 NestJS API）。
+仓库根目录 `wrangler.toml` 指定输出目录 `apps/web/dist`。根目录 `npm run build` **仅**安装并构建 `apps/web`（不构建 NestJS API）；本地全量构建用 `npm run build:all`。
 
 | Cloudflare 设置 | 值 |
 |-----------------|-----|
