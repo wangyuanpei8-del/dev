@@ -8,6 +8,11 @@ import { buildBadImportBuffer, buildSampleImportBuffer } from './fixtures/import
 
 describe('App (e2e)', () => {
   let app: INestApplication;
+  let accessToken: string;
+
+  function authed(req: request.Test) {
+    return req.set('Authorization', `Bearer ${accessToken}`);
+  }
 
   beforeAll(async () => {
     execSync('npx tsx prisma/seed.ts', {
@@ -23,6 +28,12 @@ describe('App (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api/v1');
     await app.init();
+
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@example.com', password: 'Admin123!!' })
+      .expect(201);
+    accessToken = login.body.data.accessToken;
   });
 
   afterAll(async () => {
@@ -53,59 +64,55 @@ describe('App (e2e)', () => {
 
   describe('Occupancy', () => {
     it('POST 入居重叠被拒绝 (40901)', async () => {
-      const employees = await request(app.getHttpServer())
-        .get('/api/v1/employees?page=1&pageSize=50')
-        .expect(200);
+      const employees = await authed(request(app.getHttpServer()).get('/api/v1/employees?page=1&pageSize=50')).expect(
+        200,
+      );
       const tanaka = employees.body.data.items.find(
         (e: { employeeCode?: string }) => e.employeeCode === 'E003',
       );
       expect(tanaka).toBeDefined();
 
-      const rooms = await request(app.getHttpServer())
-        .get('/api/v1/dorms')
-        .expect(200);
+      const rooms = await authed(request(app.getHttpServer()).get('/api/v1/dorms')).expect(200);
       const dorm = rooms.body.data.items.find((d: { code: string }) => d.code === 'TOYOSU-1');
-      const roomsRes = await request(app.getHttpServer())
-        .get(`/api/v1/dorms/${dorm.id}/rooms`)
-        .expect(200);
+      const roomsRes = await authed(
+        request(app.getHttpServer()).get(`/api/v1/dorms/${dorm.id}/rooms`),
+      ).expect(200);
       const room = roomsRes.body.data.items.find((r: { code: string }) => r.code === 'R01');
       expect(room).toBeDefined();
 
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/occupancy-histories')
-        .send({
+      const res = await authed(
+        request(app.getHttpServer()).post('/api/v1/occupancy-histories').send({
           employeeId: tanaka.id,
           roomId: room.id,
           moveInDate: '2026-04-15',
-        })
-        .expect(409);
+        }),
+      ).expect(409);
 
       expect(res.body.code).toBe(40901);
     });
 
     it('POST 性别不符被拒绝 (40902)', async () => {
-      const employees = await request(app.getHttpServer())
-        .get('/api/v1/employees?page=1&pageSize=50')
-        .expect(200);
+      const employees = await authed(request(app.getHttpServer()).get('/api/v1/employees?page=1&pageSize=50')).expect(
+        200,
+      );
       const sato = employees.body.data.items.find(
         (e: { employeeCode?: string }) => e.employeeCode === 'E002',
       );
 
-      const dorms = await request(app.getHttpServer()).get('/api/v1/dorms').expect(200);
+      const dorms = await authed(request(app.getHttpServer()).get('/api/v1/dorms')).expect(200);
       const dorm = dorms.body.data.items.find((d: { code: string }) => d.code === 'TOYOSU-1');
-      const roomsRes = await request(app.getHttpServer())
-        .get(`/api/v1/dorms/${dorm.id}/rooms`)
-        .expect(200);
+      const roomsRes = await authed(
+        request(app.getHttpServer()).get(`/api/v1/dorms/${dorm.id}/rooms`),
+      ).expect(200);
       const room = roomsRes.body.data.items.find((r: { code: string }) => r.code === 'R01');
 
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/occupancy-histories')
-        .send({
+      const res = await authed(
+        request(app.getHttpServer()).post('/api/v1/occupancy-histories').send({
           employeeId: sato.id,
           roomId: room.id,
           moveInDate: '2027-01-01',
-        })
-        .expect(409);
+        }),
+      ).expect(409);
 
       expect(res.body.code).toBe(40902);
     });
@@ -113,10 +120,9 @@ describe('App (e2e)', () => {
 
   describe('Dorm fees', () => {
     it('POST /dorm-fees/calculate 生成月次草稿', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/dorm-fees/calculate')
-        .send({ yearMonth: '2026-04' })
-        .expect(201);
+      const res = await authed(
+        request(app.getHttpServer()).post('/api/v1/dorm-fees/calculate').send({ yearMonth: '2026-04' }),
+      ).expect(201);
 
       expect(res.body.code).toBe(0);
       expect(res.body.data.items.length).toBeGreaterThan(0);
@@ -138,9 +144,9 @@ describe('App (e2e)', () => {
 
   describe('Export (CSV 导出)', () => {
     it('GET /exports/occupancy-histories 返回 UTF-8 CSV', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/exports/occupancy-histories')
-        .expect(200);
+      const res = await authed(request(app.getHttpServer()).get('/api/v1/exports/occupancy-histories')).expect(
+        200,
+      );
 
       expect(res.headers['content-type']).toMatch(/text\/csv/);
       expect(res.text.startsWith('\uFEFF')).toBe(true);
@@ -150,9 +156,9 @@ describe('App (e2e)', () => {
     });
 
     it('GET /exports/dorm-fees 返回 CSV', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/exports/dorm-fees?yearMonth=2026-04')
-        .expect(200);
+      const res = await authed(
+        request(app.getHttpServer()).get('/api/v1/exports/dorm-fees?yearMonth=2026-04'),
+      ).expect(200);
 
       expect(res.headers['content-type']).toMatch(/text\/csv/);
       expect(res.text).toContain('氏名');
@@ -160,9 +166,9 @@ describe('App (e2e)', () => {
     });
 
     it('GET /exports/dorm-allocation-calendar 返回月历 CSV', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/exports/dorm-allocation-calendar?yearMonth=2026-04')
-        .expect(200);
+      const res = await authed(
+        request(app.getHttpServer()).get('/api/v1/exports/dorm-allocation-calendar?yearMonth=2026-04'),
+      ).expect(200);
 
       expect(res.headers['content-type']).toMatch(/text\/csv/);
       expect(res.text).toContain('1日');
@@ -179,61 +185,62 @@ describe('App (e2e)', () => {
     };
 
     it('Excel 上传→映射→预览→执行 成功', async () => {
-      const upload = await request(app.getHttpServer())
-        .post('/api/v1/import/upload')
-        .attach('file', buildSampleImportBuffer(), {
-          filename: 'sample-import.xlsx',
-          contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        })
-        .expect(201);
+      const upload = await authed(
+        request(app.getHttpServer())
+          .post('/api/v1/import/upload')
+          .attach('file', buildSampleImportBuffer(), {
+            filename: 'sample-import.xlsx',
+            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          }),
+      ).expect(201);
 
       expect(upload.body.code).toBe(0);
       const jobId = upload.body.data.jobId;
       expect(jobId).toBeDefined();
       expect(upload.body.data.columns).toContain('氏名');
 
-      await request(app.getHttpServer())
-        .post(`/api/v1/import/${jobId}/mapping`)
-        .send({ mapping })
-        .expect(201);
+      await authed(
+        request(app.getHttpServer()).post(`/api/v1/import/${jobId}/mapping`).send({ mapping }),
+      ).expect(201);
 
-      const preview = await request(app.getHttpServer())
-        .get(`/api/v1/import/${jobId}/preview`)
-        .expect(200);
+      const preview = await authed(request(app.getHttpServer()).get(`/api/v1/import/${jobId}/preview`)).expect(
+        200,
+      );
 
       expect(preview.body.code).toBe(0);
       expect(preview.body.data.rows.length).toBeGreaterThan(0);
       expect(preview.body.data.total).toBe(2);
 
-      const exec = await request(app.getHttpServer())
-        .post(`/api/v1/import/${jobId}/execute`)
-        .expect(201);
+      const exec = await authed(request(app.getHttpServer()).post(`/api/v1/import/${jobId}/execute`)).expect(
+        201,
+      );
 
       expect(exec.body.code).toBe(0);
       expect(exec.body.data.status).toBe('COMPLETED');
 
-      const job = await request(app.getHttpServer()).get(`/api/v1/import/${jobId}`).expect(200);
+      const job = await authed(request(app.getHttpServer()).get(`/api/v1/import/${jobId}`)).expect(200);
       expect(job.body.data.status).toBe('COMPLETED');
     });
 
     it('预览时氏名为空则执行失败并返回错误行', async () => {
-      const upload = await request(app.getHttpServer())
-        .post('/api/v1/import/upload')
-        .attach('file', buildBadImportBuffer(), {
-          filename: 'bad-import.xlsx',
-          contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        })
-        .expect(201);
+      const upload = await authed(
+        request(app.getHttpServer())
+          .post('/api/v1/import/upload')
+          .attach('file', buildBadImportBuffer(), {
+            filename: 'bad-import.xlsx',
+            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          }),
+      ).expect(201);
 
       const jobId = upload.body.data.jobId;
 
-      await request(app.getHttpServer())
-        .post(`/api/v1/import/${jobId}/mapping`)
-        .send({ mapping });
+      await authed(
+        request(app.getHttpServer()).post(`/api/v1/import/${jobId}/mapping`).send({ mapping }),
+      );
 
-      await request(app.getHttpServer()).post(`/api/v1/import/${jobId}/execute`).expect(201);
+      await authed(request(app.getHttpServer()).post(`/api/v1/import/${jobId}/execute`)).expect(201);
 
-      const job = await request(app.getHttpServer()).get(`/api/v1/import/${jobId}`).expect(200);
+      const job = await authed(request(app.getHttpServer()).get(`/api/v1/import/${jobId}`)).expect(200);
       expect(job.body.data.status).toBe('FAILED');
       expect(job.body.data.errors.length).toBeGreaterThan(0);
       expect(job.body.data.errors[0].field).toBe('fullName');
