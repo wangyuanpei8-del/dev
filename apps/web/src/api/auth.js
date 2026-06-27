@@ -1,0 +1,13 @@
+import request from '@/utils/request';
+
+export function login(data) {
+  return request.post('/auth/login', data);
+}
+
+export function refresh(data) {
+  return request.post('/auth/refresh', data);
+}
+
+export function getMe() {
+  return request.get('/auth/me');
+}

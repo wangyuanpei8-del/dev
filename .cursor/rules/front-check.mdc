@@ -1,0 +1,108 @@
+---
+alwaysApply: true
+---
+
+前端业务代码生成检查规则 
+核心原则 
+严格要求：在生成任何前端业务代码之前，AI 必须主动使用 read_file工具查看 func_front.md 文档，全面确认是否已有相关的页面、组件、接口或功能逻辑。
+________________________________________
+强制检查流程 
+第一步：必须主动查看 func_front.md （没有就直接生成）
+•	强制要求：使用 read_file工具查看完整的 func_front.md 文档
+•	检查范围：Views（页面视图）、Components（公共组件）、Api（接口模块）、Store（状态管理）、Utils（工具函数） 等其他文件
+•	检查目的：确认是否已有相关页面、复用组件或已定义的接口
+第二步：逐层分析现有功能 
+1.	页面层检查：查看 Views部分，确认是否已有相同或相似的页面
+2.	组件层检查：查看 Components部分，确认是否已有通用表格、表单、弹窗
+3.	接口层检查：查看 Api部分，确认是否已有对应业务接口
+4.	状态管理层检查：查看 Store部分，确认是否已有相关 Pinia Store
+5.	工具类检查：查看 Utils部分，确认是否已有工具函数或常量定义
+6.	等其他检查
+第三步：代码复用决策 
+•	优先级1：如果发现已有完全匹配的功能，直接复用现有代码
+•	优先级2：如果发现已有类似功能，在现有类中扩展方法
+•	优先级3：如果发现相关但不完全匹配的功能，评估是否可以重构复用
+•	最后选择：只有在确认没有任何相关功能时，才创建新的文件
+________________________________________
+典型业务场景调用链路示例（本项目实际模式，详见 func_front.md §7）
+所有新增、修改、删除、查询功能，必须明确写出以下格式的调用链路。
+页面初始化数据取得 
+views/employees/index.vue  onMounted() → fetchList()
+    ↓
+api/employees.js  getEmployees(params)
+    ↓
+后端 EmployeesController.list()
+新增一条数据 
+views/dorms/index.vue  submitForm()
+    ↓
+api/dorms.js  createDorm(data)
+    ↓
+后端 DormsController.create()
+修改数据（含乐观锁 version） 
+views/employees/index.vue  submitForm()
+    ↓
+api/employees.js  updateEmployee(id, { …, version })
+    ↓
+后端 EmployeesController.update()
+删除数据 
+views/equipment/index.vue  deleteItem(id)
+    ↓
+api/equipment.js  deleteEquipmentItem(id)
+    ↓
+后端 EquipmentItemsController.remove()
+状态变更 
+views/fees/index.vue  handleConfirm(id)
+    ↓
+api/fees.js  confirmFee(id)
+    ↓
+后端 DormFeesController.confirm()
+数据联动 
+views/occupancy/create.vue  loadAssignableRooms()
+    ↓
+api/vacancies.js  getAssignableRooms({ employeeId, moveInDate })
+    ↓
+后端 VacanciesController.assignableRooms()
+图表 / 大屏初始化 
+views/dashboard/index.vue  loadDashboard()
+    ↓
+api/dashboard.js  loadDashboardKpis() / getRecentAuditLogs()
+    ↓
+后端 Occupancy / Vacancies / Fees / Audit Controller
+________________________________________
+违规检查机制 
+发现重复开发的处理 
+1.	立即停止：一旦发现已有相关功能，立即停止新开发
+2.	重新分析：分析现有功能是否满足需求
+3.	选择策略：确定是复用、扩展还是重构
+4.	重新实施：基于选定策略重新实施
+检查不充分的后果 
+•	代码冗余：页面、组件、接口重复
+•	维护困难：相同逻辑分散在多处
+•	体验不一致：表单校验、交互行为不统一
+•	效率下降：浪费开发与联调时间
+________________________________________
+命名规范参考 
+参考 func_front.md 中现有前端代码的命名模式：
+•	页面视图：views/{业务域}/{功能}.vue
+•	组件名称：{业务域}{组件名}.vue
+•	接口文件：api/{业务域}.js
+•	Store 模块：store/{业务域}.js（本项目仅 user.js / app.js；业务页直接调 api）
+•	工具函数：utils/{功能}.js
+________________________________________
+文档同步要求 
+•	每次新增页面：必须同步更新 func_front.md 的 Views 结构
+•	每次新增组件：必须同步说明 Props / Events
+•	每次新增接口：必须同步参数与返回值
+•	每次新增链路：必须写入 A → B → C → 后端 调用链
+________________________________________
+执行检查清单 
+在开始任何前端代码开发或修改前，请确认：
+•	[ ] 已使用 read_file工具查看完整的 func_front.md 文档
+•	[ ] 已逐层检查 Views / Components / Api / Store / Utils
+•	[ ] 已确认没有重复或高度相似的功能
+•	[ ] 已明确本次功能的调用链路（A → B → C → 后端）
+•	[ ] 已准备在完成后同步更新 func_front.md 文档
+________________________________________
+**重要提醒：
+违反此检查流程将导致前端代码臃肿、维护困难、联调混乱，且严重违背 Vue3 后台系统的工程化规范，必须严格遵守！**
+________________________________________

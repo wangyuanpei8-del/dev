@@ -1,0 +1,33 @@
+{
+  "name": "dormitory-management",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm -r run build",
+    "test": "npm run test:all --prefix apps/api",
+    "test:unit": "npm run test --prefix apps/api",
+    "test:api": "npm run test:e2e --prefix apps/api",
+    "test:web": "npm run test:e2e:smoke --prefix apps/web",
+    "test:web:full": "npm run test:e2e --prefix apps/web",
+    "lint": "pnpm -r run lint --if-present",
+    "db:up": "docker compose up -d postgres adminer",
+    "docker:full": "docker compose --profile full up -d --build",
+    "docker:down": "docker compose --profile full down",
+    "db:generate": "npm run prisma:generate --prefix apps/api",
+    "db:migrate": "npm run prisma:migrate --prefix apps/api",
+    "db:seed": "npm run prisma:seed --prefix apps/api",
+    "db:setup": "npm run db:up && npm run db:generate && npm run db:migrate && npm run db:seed",
+    "test-cases:gen": "node scripts/generate-dom-test-cases.mjs",
+    "test-cases:xlsx": "node scripts/test-cases-to-xlsx.mjs",
+    "test:run": "node test/run-playwright.mjs",
+    "test:run:p1": "node test/run-playwright.mjs --priority P1"
+  },
+  "devDependencies": {
+    "pg": "^8.13.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

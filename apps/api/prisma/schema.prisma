@@ -1,0 +1,280 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SYSTEM_ADMIN
+  DORM_MANAGER
+  VIEWER
+}
+
+enum EmployeeType {
+  JAPAN
+  CHINA_ASSIGNMENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum DormGenderType {
+  MALE_DORM
+  FEMALE_DORM
+}
+
+enum Location {
+  TOKYO
+  OSAKA
+  NAGOYA
+  OTHER
+}
+
+enum RoomType {
+  WESTERN
+  JAPANESE_SMALL
+  JAPANESE_MEDIUM
+  STORAGE_ROOM
+  OTHER
+}
+
+enum FeeStatus {
+  DRAFT
+  CONFIRMED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  CONFIRM
+  IMPORT
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  password_hash String    @map("password_hash")
+  display_name  String    @map("display_name")
+  role          UserRole
+  is_active     Boolean   @default(true) @map("is_active")
+  last_login_at DateTime? @map("last_login_at")
+  created_at    DateTime  @default(now()) @map("created_at")
+  updated_at    DateTime  @updatedAt @map("updated_at")
+  deleted_at    DateTime? @map("deleted_at")
+
+  audit_logs AuditLog[]
+
+  @@map("users")
+}
+
+model Department {
+  id         String    @id @default(uuid()) @db.Uuid
+  code       String?   @unique
+  name       String
+  created_at DateTime  @default(now()) @map("created_at")
+  updated_at DateTime  @updatedAt @map("updated_at")
+  deleted_at DateTime? @map("deleted_at")
+
+  employees Employee[]
+
+  @@index([name])
+  @@map("departments")
+}
+
+model Employee {
+  id                   String       @id @default(uuid()) @db.Uuid
+  version              Int          @default(1)
+  employee_code        String?      @unique @map("employee_code")
+  full_name            String       @map("full_name")
+  employee_type        EmployeeType @map("employee_type")
+  gender               Gender
+  department_id        String?      @db.Uuid @map("department_id")
+  site_nearest_station String?      @map("site_nearest_station")
+  mobile_phone         String?      @map("mobile_phone")
+  email                String?
+  first_dorm_use_date  DateTime?    @db.Date @map("first_dorm_use_date")
+  created_at           DateTime     @default(now()) @map("created_at")
+  updated_at           DateTime     @updatedAt @map("updated_at")
+  deleted_at           DateTime?    @map("deleted_at")
+
+  department          Department?        @relation(fields: [department_id], references: [id])
+  occupancy_histories OccupancyHistory[]
+  dorm_fees           DormFee[]
+  led_dorms           Dorm[]             @relation("DormLeader")
+
+  @@index([employee_type])
+  @@index([full_name])
+  @@index([department_id])
+  @@map("employees")
+}
+
+model Dorm {
+  id                      String         @id @default(uuid()) @db.Uuid
+  version                 Int            @default(1)
+  code                    String         @unique
+  name                    String
+  address                 String
+  postal_code             String?        @map("postal_code")
+  layout_type             String         @map("layout_type")
+  gender_type             DormGenderType @map("gender_type")
+  location                Location?
+  responsible_employee_id String?        @db.Uuid @map("responsible_employee_id")
+  notes                   String?
+  created_at              DateTime       @default(now()) @map("created_at")
+  updated_at              DateTime       @updatedAt @map("updated_at")
+  deleted_at              DateTime?      @map("deleted_at")
+
+  responsible_employee Employee? @relation("DormLeader", fields: [responsible_employee_id], references: [id])
+  rooms                Room[]
+
+  @@index([gender_type])
+  @@index([location])
+  @@index([responsible_employee_id])
+  @@map("dorms")
+}
+
+model Room {
+  id         String    @id @default(uuid()) @db.Uuid
+  dorm_id    String    @db.Uuid @map("dorm_id")
+  version    Int       @default(1)
+  code       String
+  name       String
+  area_sqm   Decimal   @db.Decimal(8, 2) @map("area_sqm")
+  capacity   Int       @default(1)
+  room_type  RoomType  @default(WESTERN) @map("room_type")
+  has_ac     Boolean   @default(false) @map("has_ac")
+  notes      String?
+  created_at DateTime  @default(now()) @map("created_at")
+  updated_at DateTime  @updatedAt @map("updated_at")
+  deleted_at DateTime? @map("deleted_at")
+
+  dorm                Dorm               @relation(fields: [dorm_id], references: [id])
+  occupancy_histories OccupancyHistory[]
+
+  @@unique([dorm_id, code])
+  @@index([dorm_id])
+  @@map("rooms")
+}
+
+model OccupancyHistory {
+  id              String    @id @default(uuid()) @db.Uuid
+  employee_id     String    @db.Uuid @map("employee_id")
+  room_id         String    @db.Uuid @map("room_id")
+  version         Int       @default(1)
+  move_in_date    DateTime  @db.Date @map("move_in_date")
+  move_out_date   DateTime? @db.Date @map("move_out_date")
+  move_out_reason String?   @map("move_out_reason")
+  created_at      DateTime  @default(now()) @map("created_at")
+  updated_at      DateTime  @updatedAt @map("updated_at")
+  deleted_at      DateTime? @map("deleted_at")
+
+  employee Employee @relation(fields: [employee_id], references: [id])
+  room     Room     @relation(fields: [room_id], references: [id])
+
+  @@index([room_id, move_in_date])
+  @@index([employee_id])
+  @@map("occupancy_histories")
+}
+
+model FeeRate {
+  id             String    @id @default(uuid()) @db.Uuid
+  version        Int       @default(1)
+  room_type      RoomType  @map("room_type")
+  daily_rate_yen Decimal   @db.Decimal(10, 2) @map("daily_rate_yen")
+  effective_from DateTime  @db.Date @map("effective_from")
+  effective_to   DateTime? @db.Date @map("effective_to")
+  created_at     DateTime  @default(now()) @map("created_at")
+  updated_at     DateTime  @updatedAt @map("updated_at")
+
+  @@index([room_type, effective_from])
+  @@map("fee_rates")
+}
+
+model DormFee {
+  id                String    @id @default(uuid()) @db.Uuid
+  employee_id       String    @db.Uuid @map("employee_id")
+  year_month        String    @map("year_month")
+  version           Int       @default(1)
+  amount_yen        Int       @map("amount_yen")
+  calculation_basis Json      @map("calculation_basis")
+  status            FeeStatus @default(DRAFT)
+  created_at        DateTime  @default(now()) @map("created_at")
+  updated_at        DateTime  @updatedAt @map("updated_at")
+  deleted_at        DateTime? @map("deleted_at")
+
+  employee Employee @relation(fields: [employee_id], references: [id])
+
+  @@unique([employee_id, year_month])
+  @@index([year_month])
+  @@map("dorm_fees")
+}
+
+model EquipmentItem {
+  id         String    @id @default(uuid()) @db.Uuid
+  name       String
+  category   String?
+  description String?  @map("description")
+  created_at DateTime  @default(now()) @map("created_at")
+  updated_at DateTime  @updatedAt @map("updated_at")
+  deleted_at DateTime? @map("deleted_at")
+
+  @@index([name])
+  @@map("equipment_items")
+}
+
+model StorageLocation {
+  id         String    @id @default(uuid()) @db.Uuid
+  name       String
+  description String?  @map("description")
+  status     String    @default("ACTIVE")
+  created_at DateTime  @default(now()) @map("created_at")
+  updated_at DateTime  @updatedAt @map("updated_at")
+  deleted_at DateTime? @map("deleted_at")
+
+  @@index([name])
+  @@map("storage_locations")
+}
+
+model AuditLog {
+  id          String      @id @default(uuid()) @db.Uuid
+  user_id     String?     @db.Uuid @map("user_id")
+  action      AuditAction
+  entity_type String      @map("entity_type")
+  entity_id   String?     @map("entity_id") @db.Uuid
+  before_json Json?       @map("before_json")
+  after_json  Json?       @map("after_json")
+  created_at  DateTime    @default(now()) @map("created_at")
+
+  user User? @relation(fields: [user_id], references: [id])
+
+  @@index([entity_type, entity_id])
+  @@index([created_at])
+  @@map("audit_logs")
+}
+
+model ImportJob {
+  id           String   @id @default(uuid()) @db.Uuid
+  file_name    String   @map("file_name")
+  file_path    String?  @map("file_path")
+  status       String
+  mapping_json Json     @map("mapping_json")
+  result_json  Json?    @map("result_json")
+  created_by   String?  @map("created_by") @db.Uuid
+  created_at   DateTime @default(now()) @map("created_at")
+
+  @@map("import_jobs")
+}
+
+model SystemSetting {
+  key        String   @id
+  value      String
+  updated_at DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}

@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dorm
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: dormitory_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dorm -d dormitory_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://dorm:test@localhost:5432/dormitory_test
+      JWT_SECRET: ci-jwt-secret-min-32-characters-long!!
+      JWT_REFRESH_SECRET: ci-refresh-secret-min-32-chars!!
+      CORS_ORIGIN: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            apps/web/package-lock.json
+
+      - name: Install API dependencies
+        working-directory: apps/api
+        run: npm ci
+
+      - name: Prisma generate
+        working-directory: apps/api
+        run: npx prisma generate
+
+      - name: Prisma migrate deploy
+        working-directory: apps/api
+        run: npx prisma migrate deploy
+
+      - name: Seed test database
+        working-directory: apps/api
+        run: npm run prisma:seed
+
+      - name: Unit tests
+        working-directory: apps/api
+        run: npm run test
+
+      - name: API integration tests
+        working-directory: apps/api
+        run: npm run test:e2e
+
+      - name: Build API
+        working-directory: apps/api
+        run: npm run build
+
+      - name: Install Web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Build Web
+        working-directory: apps/web
+        env:
+          VITE_API_BASE_URL: /api/v1
+        run: npm run build

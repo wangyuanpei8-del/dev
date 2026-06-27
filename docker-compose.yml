@@ -1,0 +1,140 @@
+services:
+
+  postgres:
+
+    image: postgres:16-alpine
+
+    container_name: dormitory-postgres
+
+    restart: unless-stopped
+
+    ports:
+
+      - '5432:5432'
+
+    environment:
+
+      POSTGRES_USER: dorm
+
+      POSTGRES_PASSWORD: dorm
+
+      POSTGRES_DB: dormitory
+
+    volumes:
+
+      - dormitory_pg_data:/var/lib/postgresql/data
+
+    healthcheck:
+
+      test: ['CMD-SHELL', 'pg_isready -U dorm -d dormitory']
+
+      interval: 5s
+
+      timeout: 5s
+
+      retries: 5
+
+
+
+  adminer:
+
+    image: adminer:latest
+
+    container_name: dormitory-adminer
+
+    restart: unless-stopped
+
+    ports:
+
+      - '8080:8080'
+
+    environment:
+
+      ADMINER_DEFAULT_SERVER: postgres
+
+    depends_on:
+
+      postgres:
+
+        condition: service_healthy
+
+
+
+  # 全栈演示：docker compose --profile full up -d --build
+
+  api:
+
+    profiles: [full]
+
+    build:
+
+      context: .
+
+      dockerfile: apps/api/Dockerfile
+
+    container_name: dormitory-api
+
+    restart: unless-stopped
+
+    environment:
+
+      DATABASE_URL: postgresql://dorm:dorm@postgres:5432/dormitory
+
+      JWT_SECRET: dev-jwt-secret-min-32-characters-long!!
+
+      JWT_REFRESH_SECRET: dev-refresh-secret-min-32-chars-long!!
+
+      JWT_ACCESS_EXPIRES_IN: 15m
+
+      JWT_REFRESH_EXPIRES_IN: 7d
+
+      CORS_ORIGIN: http://localhost:3000
+
+      PORT: 3001
+
+      NODE_ENV: production
+
+    ports:
+
+      - '3001:3001'
+
+    depends_on:
+
+      postgres:
+
+        condition: service_healthy
+
+
+
+  web:
+
+    profiles: [full]
+
+    build:
+
+      context: .
+
+      dockerfile: apps/web/Dockerfile
+
+      args:
+
+        VITE_API_BASE_URL: /api/v1
+
+    container_name: dormitory-web
+
+    restart: unless-stopped
+
+    ports:
+
+      - '3000:80'
+
+    depends_on:
+
+      - api
+
+
+
+volumes:
+
+  dormitory_pg_data:
+
