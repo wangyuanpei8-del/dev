@@ -7,7 +7,7 @@
     "dev:api": "pnpm --filter api dev",
     "build": "npm ci --prefix apps/web && npm run build --prefix apps/web",
     "build:all": "pnpm -r run build",
-    "deploy": "npx wrangler pages deploy apps/web/dist --project-name=dev --commit-dirty=true",
+    "deploy": "npx wrangler deploy",
     "test": "npm run test:all --prefix apps/api",
     "test:unit": "npm run test --prefix apps/api",
     "test:api": "npm run test:e2e --prefix apps/api",
