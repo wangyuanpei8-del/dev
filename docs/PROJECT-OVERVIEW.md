@@ -534,7 +534,7 @@ CI（`.github/workflows/ci.yml`）在每次 push 时自动跑单元 + API 集成
 | 1.4.1 | 2026-06-20 | 导航/UI：首页显示名「ダッシュボード」→「ホーム」 |
 | 1.5.0 | 2026-06-20 | 安全/UX 全面加固：后端 RBAC、404 页、移动端侧边栏、ListLoadAlert/DetailNotFound 全列表与详情页、审计可读 diff 等 |
 | 1.4.0 | 2026-06-20 | UX 改造恢复：ActionHubCard/StatusBadge/面包屑、入退寮 hub、双路径向导、社員 360°、履歴筛选、浅色分组侧边栏 |
-| 1.6.0 | 2026-06-27 | 部署：Cloudflare Pages 构建改为根目录 `npm run build` 仅构建 web（`build:all` 为全 monorepo） |
+| 1.6.0 | 2026-06-27 | 部署：Cloudflare Pages 构建仅 web；Deploy command 须留空（勿用 wrangler deploy） |
 
 ---
 

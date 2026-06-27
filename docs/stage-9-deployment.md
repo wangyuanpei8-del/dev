@@ -99,15 +99,17 @@ npm run docker:full
 
 ## 9.6.1 Cloudflare Pages（Web 前端）
 
-仓库根目录 `wrangler.toml` 指定输出目录 `apps/web/dist`。根目录 `npm run build` **仅**安装并构建 `apps/web`（不构建 NestJS API）；本地全量构建用 `npm run build:all`。
+根目录 `npm run build` **仅**安装并构建 `apps/web`（不构建 NestJS API）；本地全量构建用 `npm run build:all`。
 
 | Cloudflare 设置 | 值 |
 |-----------------|-----|
-| Build command | `npm run build`（默认即可） |
+| Build command | `npm run build` |
 | Build output directory | `apps/web/dist` |
+| **Deploy command** | **留空**（勿填 `npx wrangler deploy`，那是 Workers 命令） |
 | 环境变量 `VITE_API_BASE_URL` | 已部署 API 的完整 URL，如 `https://api.example.com/api/v1` |
 | 环境变量 `NODE_VERSION` | `20`（可选） |
 
+> Pages 会在构建成功后**自动发布** `apps/web/dist`，无需额外 deploy 命令。  
 > API（NestJS + PostgreSQL）需单独部署至 Railway / Render 等；Cloudflare Pages 仅托管 Vue 静态站点。
 
 ## 9.7 部署步骤（首次本番）
